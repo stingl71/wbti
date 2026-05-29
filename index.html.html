@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>WBTI · 你是哪种打工人</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=Space+Mono:wght@400;700&display=swap');
+
+:root {
+  --bg: #F5F0E8;
+  --bg2: #EDE7D9;
+  --ink: #1A1614;
+  --ink2: #4A3F38;
+  --ink3: #8C7B70;
+  --accent: #C8401A;
+  --accent2: #E8A030;
+  --border: #C4B8AC;
+  --card: #FDFAF5;
+  --green: #2D6A4F;
+  --mono: 'Space Mono', monospace;
+  --serif: 'Noto Serif SC', serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--ink); font-family: var(--serif); min-height: 100vh; overflow-x: hidden; }
+
+.screen { display: none; min-height: 100vh; }
+.screen.active { display: flex; flex-direction: column; }
+
+/* ── INTRO ── */
+#intro { align-items: center; justify-content: center; padding: 2rem 1.5rem; position: relative; overflow: hidden; }
+#intro::before {
+  content: 'WBTI';
+  position: absolute;
+  font-family: var(--mono);
+  font-size: 28vw;
+  font-weight: 700;
+  color: transparent;
+  -webkit-text-stroke: 1px var(--border);
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  white-space: nowrap;
+  opacity: 0.4;
+}
+.intro-inner { position: relative; z-index: 1; text-align: center; max-width: 360px; }
+.intro-badge {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  padding: 4px 12px;
+  margin-bottom: 20px;
+}
+.intro-title { font-size: clamp(30px, 9vw, 46px); font-weight: 700; line-height: 1.2; margin-bottom: 12px; color: var(--ink); }
+.intro-sub { font-size: 14px; color: var(--ink2); margin-bottom: 28px; line-height: 1.8; }
+.intro-sub em { color: var(--accent); font-style: normal; }
+.intro-stats { display: flex; justify-content: center; gap: 24px; margin-bottom: 32px; }
+.stat { text-align: center; }
+.stat-num { font-family: var(--mono); font-size: 22px; font-weight: 700; color: var(--accent); display: block; }
+.stat-label { font-size: 11px; color: var(--ink3); display: block; margin-top: 2px; }
+.btn-start {
+  display: block; width: 100%; max-width: 280px; margin: 0 auto;
+  padding: 16px; background: var(--ink); color: var(--bg);
+  font-family: var(--serif); font-size: 16px; font-weight: 600;
+  border: none; cursor: pointer; transition: transform 0.1s;
+}
+.btn-start:active { transform: scale(0.97); }
+
+/* ── QUIZ ── */
+#quiz { padding: 0; }
+.quiz-header {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--card);
+  position: sticky; top: 0; z-index: 10;
+}
+.quiz-label { font-family: var(--mono); font-size: 11px; color: var(--ink3); letter-spacing: 0.1em; }
+.quiz-header-right { display: flex; align-items: center; gap: 12px; }
+.progress-track { width: 100px; height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; }
+.progress-fill { height: 100%; background: var(--accent); border-radius: 2px; transition: width 0.4s ease; }
+.quiz-body { padding: 2rem 1.5rem; flex: 1; }
+.q-number { font-family: var(--mono); font-size: 11px; color: var(--accent); letter-spacing: 0.1em; margin-bottom: 12px; }
+.q-text { font-size: clamp(16px, 4.5vw, 20px); font-weight: 600; line-height: 1.6; margin-bottom: 28px; color: var(--ink); }
+.options { display: flex; flex-direction: column; gap: 10px; }
+.opt-btn {
+  width: 100%; text-align: left; padding: 14px 16px;
+  background: var(--card); border: 1px solid var(--border);
+  font-family: var(--serif); font-size: 14px; line-height: 1.6; color: var(--ink2);
+  cursor: pointer; transition: all 0.15s;
+}
+.opt-btn::before { content: attr(data-letter); font-family: var(--mono); font-size: 11px; color: var(--ink3); margin-right: 10px; }
+.opt-btn:active, .opt-btn.selected { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.opt-btn.selected::before { color: var(--accent2); }
+.btn-back {
+  background: none; border: 1px solid var(--border);
+  font-family: var(--mono); font-size: 11px; color: var(--ink3);
+  padding: 5px 10px; cursor: pointer; letter-spacing: 0.05em;
+  transition: all 0.15s;
+}
+.btn-back:hover { border-color: var(--ink2); color: var(--ink2); }
+.btn-back:disabled { opacity: 0.3; cursor: default; }
+
+/* ── LOADING ── */
+#loading { align-items: center; justify-content: center; flex-direction: column; gap: 20px; }
+.loading-emoji { font-size: 48px; animation: spin 1.5s linear infinite; }
+@keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+.loading-text { font-family: var(--mono); font-size: 12px; color: var(--ink3); letter-spacing: 0.1em; }
+
+/* ── RESULT ── */
+#result { padding: 0; }
+.result-hero {
+  background: var(--ink); color: var(--bg);
+  padding: 2.5rem 1.5rem 2rem;
+  position: relative; overflow: hidden;
+}
+.result-hero::after {
+  content: attr(data-code);
+  position: absolute; font-family: var(--mono); font-size: 18vw; font-weight: 700;
+  color: transparent; -webkit-text-stroke: 1px rgba(255,255,255,0.08);
+  right: -2vw; bottom: -2vw; pointer-events: none; line-height: 1;
+}
+.result-tag { font-family: var(--mono); font-size: 10px; letter-spacing: 0.15em; color: var(--accent2); margin-bottom: 12px; display: block; }
+.result-emoji { font-size: 52px; margin-bottom: 10px; display: block; }
+.result-name { font-size: clamp(28px, 8vw, 40px); font-weight: 700; line-height: 1.2; margin-bottom: 6px; }
+.result-archetype { font-family: var(--mono); font-size: 11px; color: rgba(255,255,255,0.45); margin-bottom: 16px; }
+.result-sting { font-size: 14px; line-height: 1.7; color: rgba(255,255,255,0.85); border-left: 2px solid var(--accent); padding-left: 12px; position: relative; z-index: 1; }
+
+.result-body { padding: 1.5rem; }
+.tag-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 20px; }
+.rtag { font-family: var(--mono); font-size: 10px; padding: 3px 10px; border: 1px solid var(--border); color: var(--ink3); letter-spacing: 0.05em; }
+.result-desc { font-size: 14px; line-height: 1.85; color: var(--ink2); margin-bottom: 24px; }
+
+.quad-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 24px; }
+.quad-item { background: var(--bg2); padding: 12px; border-left: 2px solid var(--border); }
+.quad-item.danger { border-left-color: var(--accent); }
+.quad-item.power { border-left-color: var(--accent2); }
+.quad-ql { font-family: var(--mono); font-size: 9px; color: var(--ink3); letter-spacing: 0.08em; margin-bottom: 5px; }
+.quad-qv { font-size: 12px; line-height: 1.55; color: var(--ink); }
+
+.quote-wrap {
+  border: 1px solid var(--border); padding: 20px 18px 16px;
+  background: var(--card); margin-bottom: 24px; position: relative;
+}
+.quote-wrap::before {
+  content: '"'; position: absolute; top: -14px; left: 14px;
+  font-size: 48px; color: var(--accent); font-family: Georgia, serif; line-height: 1;
+}
+.quote-text { font-size: 13px; line-height: 1.9; color: var(--ink2); font-style: italic; margin-bottom: 8px; padding-top: 4px; }
+.quote-src { font-family: var(--mono); font-size: 10px; color: var(--ink3); letter-spacing: 0.05em; }
+
+/* ── BREAKTHROUGH ── */
+.breakthrough-wrap { margin-bottom: 24px; }
+.bt-title {
+  font-family: var(--mono); font-size: 10px; letter-spacing: 0.12em;
+  color: var(--green); border: 1px solid var(--green);
+  display: inline-block; padding: 3px 10px; margin-bottom: 14px;
+}
+.bt-item { display: flex; gap: 12px; margin-bottom: 14px; align-items: flex-start; }
+.bt-num {
+  font-family: var(--mono); font-size: 13px; font-weight: 700;
+  color: var(--accent); flex-shrink: 0; width: 20px; padding-top: 1px;
+}
+.bt-text { font-size: 13px; line-height: 1.8; color: var(--ink2); }
+.bt-text strong { color: var(--ink); font-weight: 600; }
+
+/* ── SHARE ── */
+.share-section { background: var(--bg2); border: 1px solid var(--border); padding: 20px; text-align: center; margin-bottom: 12px; }
+.share-title { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
+.share-sub { font-size: 12px; color: var(--ink3); line-height: 1.7; margin-bottom: 16px; }
+.btn-share {
+  display: block; width: 100%; padding: 14px;
+  background: var(--accent); color: white;
+  font-family: var(--serif); font-size: 15px; font-weight: 600;
+  border: none; cursor: pointer; margin-bottom: 10px; transition: opacity 0.15s;
+}
+.btn-share:active { opacity: 0.85; }
+.btn-save-img {
+  display: block; width: 100%; padding: 14px;
+  background: var(--ink); color: var(--bg);
+  font-family: var(--serif); font-size: 15px; font-weight: 600;
+  border: none; cursor: pointer; margin-bottom: 10px; transition: opacity 0.15s;
+}
+.btn-save-img:active { opacity: 0.8; }
+.btn-retry {
+  display: block; width: 100%; padding: 13px;
+  background: transparent; color: var(--ink2);
+  font-family: var(--serif); font-size: 14px;
+  border: 1px solid var(--border); cursor: pointer;
+}
+.wbti-footer { text-align: center; padding: 16px; font-family: var(--mono); font-size: 10px; color: var(--ink3); letter-spacing: 0.08em; }
+
+/* ── IMAGE PREVIEW MODAL ── */
+.img-modal {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.85); z-index: 100;
+  flex-direction: column; align-items: center; justify-content: center;
+  padding: 20px;
+}
+.img-modal.active { display: flex; }
+.img-modal img { max-width: 100%; max-height: 70vh; border-radius: 4px; display: block; }
+.img-modal-hint { font-family: var(--mono); font-size: 12px; color: rgba(255,255,255,0.6); margin-top: 14px; text-align: center; line-height: 1.8; }
+.img-modal-close { margin-top: 16px; padding: 10px 28px; background: transparent; border: 1px solid rgba(255,255,255,0.3); color: white; font-family: var(--serif); font-size: 14px; cursor: pointer; border-radius: 2px; }
+
+.screen { animation: fadeIn 0.3s ease; }
+@keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+</style>
+</head>
+<body>
+
+<!-- INTRO -->
+<div id="intro" class="screen active">
+  <div class="intro-inner">
+    <div class="intro-badge">WBTI · 2026</div>
+    <div class="intro-title">你是哪种<br>打工人？</div>
+    <div class="intro-sub">10种职场原型，总有一个<em>精准戳中你</em><br>测完记得@你觉得最像的同事</div>
+    <div class="intro-stats">
+      <div class="stat"><span class="stat-num">10</span><span class="stat-label">种原型</span></div>
+      <div class="stat"><span class="stat-num">15</span><span class="stat-label">道题目</span></div>
+      <div class="stat"><span class="stat-num">3min</span><span class="stat-label">搞定</span></div>
+    </div>
+    <button class="btn-start" onclick="startQuiz()">开始测试 →</button>
+  </div>
+</div>
+
+<!-- QUIZ -->
+<div id="quiz" class="screen">
+  <div class="quiz-header">
+    <span class="quiz-label">WBTI · <span id="q-counter">1/15</span></span>
+    <div class="quiz-header-right">
+      <button class="btn-back" id="btn-back" onclick="goBack()" disabled>← 上一题</button>
+      <div class="progress-track"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+    </div>
+  </div>
+  <div class="quiz-body">
+    <div class="q-number" id="q-number">Q01</div>
+    <div class="q-text" id="q-text"></div>
+    <div class="options" id="options"></div>
+  </div>
+</div>
+
+<!-- LOADING -->
+<div id="loading" class="screen">
+  <div class="loading-emoji">⚙️</div>
+  <div class="loading-text">正在分析你的打工DNA...</div>
+</div>
+
+<!-- RESULT -->
+<div id="result" class="screen">
+  <div class="result-hero" id="result-hero">
+    <span class="result-tag">WBTI · 职场原型测试 · 2026</span>
+    <span class="result-emoji" id="result-emoji"></span>
+    <div class="result-name" id="result-name"></div>
+    <div class="result-archetype" id="result-archetype"></div>
+    <div class="result-sting" id="result-sting"></div>
+  </div>
+  <div class="result-body">
+    <div class="tag-row" id="result-tags"></div>
+    <div class="result-desc" id="result-desc"></div>
+    <div class="quad-grid" id="result-quads"></div>
+    <div class="quote-wrap">
+      <div class="quote-text" id="quote-text"></div>
+      <div class="quote-src" id="quote-src"></div>
+    </div>
+    <div class="breakthrough-wrap">
+      <div class="bt-title">破局建议</div>
+      <div id="breakthrough-items"></div>
+    </div>
+    <div class="share-section">
+      <div class="share-sub">@你身边的「背刺专家」「职场演员」「画饼受害者」<br>让他们也来对号入座</div>
+      <button class="btn-save-img" onclick="generateShareImage()">📸 生成结果图片保存分享</button>
+      <button class="btn-share" onclick="handleShare()">🔗 复制链接发给朋友</button>
+      <button class="btn-retry" onclick="retryQuiz()">重新测试</button>
+    </div>
+    <div class="wbti-footer">WBTI · 职场原型测试 · 2026 · 非商业用途</div>
+  </div>
+</div>
+
+<!-- IMAGE MODAL -->
+<div class="img-modal" id="img-modal">
+  <img id="share-img-preview" src="" alt="结果图片">
+  <div class="img-modal-hint">长按图片保存到相册<br>发朋友圈或微信群，扫码可直接测试</div>
+  <button class="img-modal-close" onclick="closeImgModal()">关闭</button>
+  </div>
+</div>
+
+<script>
+const QUESTIONS = [
+  {
+    text: "周五下班前，老板突然说「这个方案周一要用，周末帮忙完善一下」，你第一反应是？",
+    opts: [
+      { text: "直接问需要完善哪几个部分，立刻开始拆任务", scores: {A:1} },
+      { text: "默默打开电脑，什么都不说", scores: {A:-1} },
+      { text: "发消息问能不能周一早上来了再做", scores: {C:1} },
+      { text: "心里骂了一句但还是做了，顺便截图备份", scores: {C:-1} }
+    ]
+  },
+  {
+    text: "遇到一个棘手的跨部门问题，你最先想到的是？",
+    opts: [
+      { text: "找认识的人先打个招呼，关系到位事情好办", scores: {B:1} },
+      { text: "自己先研究清楚再说，不想欠人情", scores: {B:-1} },
+      { text: "拉个群，@所有相关人，流程走起来", scores: {B:1} },
+      { text: "发邮件留记录，该谁的锅谁背", scores: {A:-1} }
+    ]
+  },
+  {
+    text: "连续被PUA三次之后，你的反应更接近？",
+    opts: [
+      { text: "在工位上保持平静，回家之后崩了", scores: {C:-1} },
+      { text: "当场没说什么，但写了一封很长的邮件然后删掉了", scores: {C:-1} },
+      { text: "直接怼回去，哪怕后来后悔", scores: {C:1} },
+      { text: "开始悄悄更新简历", scores: {A:1} }
+    ]
+  },
+  {
+    text: "你更认同哪句话？",
+    opts: [
+      { text: "职位越高，掌控越多", scores: {D:1} },
+      { text: "稳定比什么都重要，别折腾", scores: {D:-1} },
+      { text: "做好眼前的事，机会自然来", scores: {D:-1} },
+      { text: "不往上走就是往下走，没有原地", scores: {D:1} }
+    ]
+  },
+  {
+    text: "团队出了问题，责任归属不明，你的第一动作是？",
+    opts: [
+      { text: "先把事情解决，责任的事之后再说", scores: {A:1} },
+      { text: "翻出之前的消息记录，确认自己没问题", scores: {A:-1} },
+      { text: "找到最有可能背锅的人，提前沟通一下", scores: {B:1} },
+      { text: "沉默，等别人先开口", scores: {A:-1} }
+    ]
+  },
+  {
+    text: "年会抽签坐位置，你希望坐在？",
+    opts: [
+      { text: "老板旁边，难得的表现机会", scores: {B:1, D:1} },
+      { text: "自己部门的人旁边，聊得来比较重要", scores: {B:-1} },
+      { text: "角落，吃完赶紧走", scores: {D:-1} },
+      { text: "不在乎，反正年会没什么意义", scores: {C:-1} }
+    ]
+  },
+  {
+    text: "一个不合理的需求在群里发出来了，你的反应？",
+    opts: [
+      { text: "私信对方解释为什么做不到", scores: {C:-1} },
+      { text: "群里直接说「这个时间线不现实」", scores: {C:1} },
+      { text: "先回复「收到」，然后看看怎么拖", scores: {A:-1} },
+      { text: "不回复，等别人先表态", scores: {A:-1} }
+    ]
+  },
+  {
+    text: "你觉得自己现在的工作状态是？",
+    opts: [
+      { text: "在积累，随时准备跳更高的台阶", scores: {D:1} },
+      { text: "能过就过，别给自己找麻烦", scores: {D:-1} },
+      { text: "不知道，做着做着就到现在了", scores: {C:-1} },
+      { text: "随时可以不干，但还没找到更好的", scores: {C:1} }
+    ]
+  },
+  {
+    text: "如果今天可以完全「隐形」——没人找你，没消息，你会？",
+    opts: [
+      { text: "感觉很爽，这才是理想工作状态", scores: {D:-1} },
+      { text: "有点不安，万一错过什么重要消息", scores: {D:1} },
+      { text: "趁机把自己的事推进一大截", scores: {A:1} },
+      { text: "睡觉", scores: {A:-1} }
+    ]
+  },
+  {
+    text: "你觉得自己在公司存活到现在，主要靠的是？",
+    opts: [
+      { text: "和大家关系不错，没人想弄我", scores: {B:1} },
+      { text: "我做的东西别人做不了", scores: {B:-1} },
+      { text: "干一天是一天，做好份内事就行", scores: {A:-1, D:-1} },
+      { text: "从不惹麻烦，从不被注意", scores: {A:-1} }
+    ]
+  },
+  {
+    text: "月底看到工资条，比预期少了一截，你？",
+    opts: [
+      { text: "立刻找HR或者老板问清楚", scores: {C:1, A:1} },
+      { text: "心里难受，嘴上没说，默默记着", scores: {C:-1} },
+      { text: "打开招聘软件刷了一个小时", scores: {A:1} },
+      { text: "算了，懒得搞这些", scores: {D:-1} }
+    ]
+  },
+  {
+    text: "新来了一个同事，比你年轻，薪资据说比你高，你？",
+    opts: [
+      { text: "去跟他打好关系，说不定以后有用", scores: {B:1} },
+      { text: "默默观察他的水平，看看有没有传言那么强", scores: {B:-1} },
+      { text: "内心翻涌但表现正常，回家睡不着", scores: {C:-1} },
+      { text: "没什么感觉，各人有各人的命", scores: {D:-1} }
+    ]
+  },
+  {
+    text: "项目做到一半发现方向有问题，你最可能做的是？",
+    opts: [
+      { text: "立刻拉会，重新对齐方向", scores: {A:1} },
+      { text: "先做完这部分，问题留给下一阶段再说", scores: {A:-1} },
+      { text: "跟最近的同事小声说一句，看看别人怎么看", scores: {B:1} },
+      { text: "写了个备注发给负责人，证明我提过", scores: {A:-1} }
+    ]
+  },
+  {
+    text: "五年后，你最希望自己处于哪种状态？",
+    opts: [
+      { text: "带团队，有决策权", scores: {D:1} },
+      { text: "还在做现在的事，但做得更好", scores: {D:-1, B:-1} },
+      { text: "不在这个公司了", scores: {C:1} },
+      { text: "不知道，想这个太累了", scores: {C:-1} }
+    ]
+  },
+  {
+    text: "如果用一种动物描述你的职场状态，你选？",
+    opts: [
+      { text: "蜗牛——慢但从不停，壳就是我的底线", scores: {C:-1, D:-1} },
+      { text: "鳄鱼——大部分时间沉在水里，该出手时绝不手软", scores: {C:1, A:1} },
+      { text: "候鸟——到了一定时候就走，没什么可留恋的", scores: {D:1, C:1} },
+      { text: "珊瑚——活着，但不知道在干嘛", scores: {C:-1, D:-1} }
+    ]
+  }
+];
+
+const PERSONAS = {
+  MALO: {
+    emoji:'🐒', name:'吗喽', archetype:'MALO · 执行者原型',
+    tags:['被动防御','靠专业','内化压力','求稳'],
+    sting:'你是公司的空气——没你不行，但没人感谢你。',
+    desc:'你是公司里那个干最多活、被骂最多次、却莫名其妙活到最后的人。没有攻击性，没有野心，但有一种令人费解的韧性。任何人都能把锅甩给你，因为你真的能接住。你不是不聪明，只是把所有聪明都用在了"怎么把这件烂事做完"上。',
+    quads:[
+      {label:'职场行为',val:'默默执行，不争不抢，群消息最后一个回',type:''},
+      {label:'生存策略',val:'用不可替代的执行力换取最后的安全感',type:''},
+      {label:'致命弱点',val:'不会表现自己，功劳永远被别人顺手拿走',type:'danger'},
+      {label:'隐藏超能力',val:'抗压能力超强，别人崩溃的时候你还在',type:'power'}
+    ],
+    quote:'你最大的罪恶，就是你白白地毁灭了自己，背叛了自己。',
+    quoteSrc:'— 陀思妥耶夫斯基《罪与罚》',
+    breakthrough:[
+      {title:'学会「可见性管理»', text:'做完一件事，养成习惯在群里或周报里简短说一句。不是邀功，是让你的付出被记录下来。'},
+      {title:'说「不」是一种技能', text:'下次有人甩锅，先问清楚"这个属于谁的职责范围"，再决定要不要接。接了就要，不接给理由。'},
+      {title:'找一个愿意帮你说话的人', text:'在组织里，你需要一个知道你在做什么的盟友。不是要他帮你争，是在你不在场的会议里，有人知道你的存在。'}
+    ]
+  },
+  ACTR: {
+    emoji:'🎭', name:'职场演员', archetype:'ACTR · 表演者原型',
+    tags:['主动进攻','靠关系','内化压力','向上'],
+    sting:'你的存在证明了一件事：包装即实力。',
+    desc:'你的汇报PPT永远比实际工作漂亮，你的开会发言永远比执行积极。你不是在偷懒，你只是非常清楚：在这个公司，被看见比做出来更重要。你把这个规则玩到了极致，以至于开始分不清哪个才是真实的自己。',
+    quads:[
+      {label:'职场行为',val:'抢先发言，管理形象，占领话语权',type:''},
+      {label:'生存策略',val:'用精准的形象管理弥补执行力的缺口',type:''},
+      {label:'致命弱点',val:'遇到真正需要落地的项目就会原形毕露',type:'danger'},
+      {label:'隐藏超能力',val:'极强的影响力，能带动情绪和改变方向',type:'power'}
+    ],
+    quote:'我们都在向他人表演，向自己表演，这种表演如此持久，以至于我们已经不再知道自己在表演。',
+    quoteSrc:'— 萨特《存在与虚无》',
+    breakthrough:[
+      {title:'找一件真正做完的事', text:'选一个项目，从头跟到落地。不是为了证明给别人看，是为了让你自己知道，你其实可以。'},
+      {title:'把影响力变成资产', text:'你很会让别人相信你——这是真本事。但信任有保质期，找到一件事把它兑现成结果，影响力才能滚雪球。'},
+      {title:'和执行力强的人搭档', text:'找一个互补的搭档，你负责方向和表达，他负责落地和细节。这不是掩盖弱点，是把优势最大化。'}
+    ]
+  },
+  INVS: {
+    emoji:'🕳️', name:'人形透明体', archetype:'INVS · 隐形者原型',
+    tags:['被动防御','靠专业','内化压力','求稳'],
+    sting:'你是薛定谔的员工——领导不确定你在不在，但你一直在。',
+    desc:'开会不被点名，群消息没人@你，裁员名单上也没你。你用一种近乎艺术的方式实现了职场隐身。你不是没能力，是摸透了一个真理：存在感是双刃剑。但有一天你会发现，被遗忘和被保护之间，只有一纸之隔。',
+    quads:[
+      {label:'职场行为',val:'能不出现就不出现，能不发言就不发言',type:''},
+      {label:'生存策略',val:'通过降低存在感延长存活周期',type:''},
+      {label:'致命弱点',val:'重组时最先被忘记，晋升从来轮不到你',type:'danger'},
+      {label:'隐藏超能力',val:'观察力极强，公司暗流比任何人都清楚',type:'power'}
+    ],
+    quote:'他使自己消失，这是他唯一能真正完成的事情，而他为此感到某种隐秘的骄傲。',
+    quoteSrc:'— 卡夫卡《城堡》',
+    breakthrough:[
+      {title:'每周一次「主动出现»', text:'不需要大动作，在一次会议里发一个有价值的观点，或者主动找一个人聊5分钟。让人知道你在想事情。'},
+      {title:'把观察力变成贡献', text:'你看透了很多事，但你从不说。试着选一个安全的场合，把你的判断说出来。信息就是价值。'},
+      {title:'给自己一个「不可删除»的标签', text:'在某一个具体的技能或领域，成为团队里唯一的那个人。隐身可以，但要留一个别人找不到替代品的锚点。'}
+    ]
+  },
+  BKST: {
+    emoji:'🔪', name:'背刺专家', archetype:'BKST · 猎手原型',
+    tags:['主动进攻','靠关系','内化压力','向上'],
+    sting:'你不是坏人，只是把"丛林法则"学得太透彻了。',
+    desc:'你永远知道谁是软柿子，永远在最关键时刻消失，功劳全揽，锅全推。你甚至会让被你背刺的人觉得"这好像是我自己的问题"。你不是坏人，只是把职场丛林法则学得太透彻了，透彻到你已经分不清这是策略还是本能。',
+    quads:[
+      {label:'职场行为',val:'精准识别盟友和弃子，随时切换阵营',type:''},
+      {label:'生存策略',val:'用政治手腕在组织混乱中持续上升',type:''},
+      {label:'致命弱点',val:'信誉账户迟早透支，树敌太多终成孤岛',type:'danger'},
+      {label:'隐藏超能力',val:'极强的局势判断力，天生的战略眼光',type:'power'}
+    ],
+    quote:'对他人撒谎是微不足道的罪行，向自己撒谎才是真正不可饶恕的——因为那意味着你已经不再尊重自己到连欺骗都懒得精心设计了。',
+    quoteSrc:'— 陀思妥耶夫斯基《地下室手记》',
+    breakthrough:[
+      {title:'信誉是可以复利的', text:'你的战略眼光是真实力。试着把它用在帮别人赢上——带着队友一起赢，比单独赢的收益高得多，而且可持续。'},
+      {title:'建立一个真实的盟友', text:'不是利用关系，是真正的互信。职场里有一个真正信任你的人，抵得上十个你以为在用的人。'},
+      {title:'把政治能力用在更大的事上', text:'你看清楚了组织的运作规律，这是很少人有的能力。现在的问题是，你在用它做什么？'}
+    ]
+  },
+  BULL: {
+    emoji:'🪨', name:'老黄牛', archetype:'BULL · 承重墙原型',
+    tags:['主动执行','靠专业','内化压力','求稳'],
+    sting:'你是公司的地基，但地基不会出现在竣工典礼上。',
+    desc:'不社交，不表演，靠专业能力默默存在。你是团队里最可靠的人，也是最容易被忽视的人。任何人都能把锅甩给你，因为你真的能接住。你不是不想被看见，只是不屑于用那些方式——但不屑和无力，有时候看起来很像。',
+    quads:[
+      {label:'职场行为',val:'低调执行，高质量交付，拒绝一切表演',type:''},
+      {label:'生存策略',val:'用不可替代的专业能力构建护城河',type:''},
+      {label:'致命弱点',val:'不懂向上管理，付出和回报严重不匹配',type:'danger'},
+      {label:'隐藏超能力',val:'真正的危机时刻，所有人都会来找你',type:'power'}
+    ],
+    quote:'只有一件事我感到恐惧：那就是配不上我所承受的苦难。',
+    quoteSrc:'— 陀思妥耶夫斯基《被侮辱与被损害的人》',
+    breakthrough:[
+      {title:'向上管理不是表演，是沟通', text:'每隔两周，把你在做的事和产生的价值，用一句话告诉你的直属上级。不是汇报，是让对方知道你的存在和贡献。'},
+      {title:'学会定价自己', text:'你的技能有市场价值，你知道吗？去看看外部招聘，了解你能值多少钱。这不是要你跳槽，是让你谈薪有底气。'},
+      {title:'拒绝是专业的一部分', text:'下次有人甩锅，可以说「我现在手上有X，这个要排到什么时候」。给选择，不是直接拒绝，但边界就出来了。'}
+    ]
+  },
+  BAIT: {
+    emoji:'🎯', name:'画饼受害者', archetype:'BAIT · 信徒原型',
+    tags:['被动','靠专业','内化压力','向上'],
+    sting:'不是你傻，是你每次都恰好在最后一刻选择相信。',
+    desc:'相信过期权，相信过晋升，相信过"明年一定涨薪"。每一次你都告诉自己"再等等"，每一次都恰好在最后一刻选择留下来。不是你傻，是你骨子里有一种不肯放弃的执念——有时候叫忠诚，有时候叫被困住了。',
+    quads:[
+      {label:'职场行为',val:'努力工作，相信未来，不断延迟满足',type:''},
+      {label:'生存策略',val:'用对未来的期待支撑当下所有的委屈',type:''},
+      {label:'致命弱点',val:'太容易被"未来"绑架，一再错失当下选择',type:'danger'},
+      {label:'隐藏超能力',val:'超强的耐力和延迟满足能力，真正的长跑者',type:'power'}
+    ],
+    quote:'他们被提供了一个选择：成为国王，或者成为国王的信使。就像孩子一样，他们都想成为信使——于是世界上到处都是信使，奔跑着传递那些已经失去意义的消息。',
+    quoteSrc:'— 卡夫卡《寓言与悖论》',
+    breakthrough:[
+      {title:'给承诺设一个截止日期', text:'下次听到"明年涨薪""Q3晋升"，问清楚：几月几号？用什么来衡量？没有具体答案的承诺，不是承诺，是情绪安抚。'},
+      {title:'建立你自己的「离开条件»', text:'现在就写下来：如果X没有发生，我会在Y时间做出选择。不是要你立刻走，是让你有主动权而不是被动等待。'},
+      {title:'你的耐力是稀缺资源', text:'你能扛，这是真本事。但要用在值得的地方。区分「值得等待的长期投资」和「不会兑现的空头支票」，这是你现在最需要练的判断力。'}
+    ]
+  },
+  BLME: {
+    emoji:'🛡️', name:'首席背锅官', archetype:'BLME · 避雷针原型',
+    tags:['被动','靠关系','内化压力','求稳'],
+    sting:'你是团队的避雷针，但没有人给你发津贴。',
+    desc:'你没有做错任何事，但每次出问题，大家都默契地看向你。你不是没有意见，只是在那个当下选择了沉默，然后发现沉默变成了默认，默认变成了习惯，习惯变成了你在这家公司的身份。你太好说话了，这是你最大的职场风险。',
+    quads:[
+      {label:'职场行为',val:'配合一切，不拒绝，不抱怨，默默承受',type:''},
+      {label:'生存策略',val:'用低冲突换取表面平和，代价是自己',type:''},
+      {label:'致命弱点',val:'被欺负了也不说，久了连自己都觉得该背',type:'danger'},
+      {label:'隐藏超能力',val:'极强的共情力，团队里最懂人心的那个',type:'power'}
+    ],
+    quote:'温顺本身就是一种暴力——它让施加者心安理得，让承受者慢慢忘记自己本来有权拒绝。',
+    quoteSrc:'— 契诃夫《三姐妹》创作笔记',
+    breakthrough:[
+      {title:'沉默不等于同意', text:'下次在会议里被默认背锅，试着说一句「这个我想确认一下，责任边界在哪里？」不需要激烈，只需要说出来。'},
+      {title:'记录你的贡献和你的委屈', text:'建一个私人文档，把你做了什么、背了什么锅、什么时候没有被公平对待都写下来。这不是为了算账，是为了让你自己清醒。'},
+      {title:'你的共情力值很多钱', text:'你最懂人，这是管理者最稀缺的能力。但前提是你先把自己管理好。从对自己说「不」开始练起。'}
+    ]
+  },
+  BURN: {
+    emoji:'🚀', name:'自燃型卷王', archetype:'BURN · 西西弗斯原型',
+    tags:['主动进攻','靠专业','外化压力','向上'],
+    sting:'你卷赢了所有人，却输给了自己。',
+    desc:'凌晨发消息，周末回邮件，不是因为加班费，是因为停下来会焦虑。你不是被逼的，是自己点燃了自己。你卷赢了所有人，但代价是你再也不记得上一次什么都不想是什么感觉了。最可怕的不是累，是你已经不知道为什么要这么拼了。',
+    quads:[
+      {label:'职场行为',val:'主动加压，自我驱动，永远在高速运转',type:''},
+      {label:'生存策略',val:'用极致投入换取绝对不可替代的位置',type:''},
+      {label:'致命弱点',val:'Burnout是迟早的事，而且来了会很猛',type:'danger'},
+      {label:'隐藏超能力',val:'执行力天花板，认真做的事几乎没有失败过',type:'power'}
+    ],
+    quote:'一个人之所以疲倦，是因为他抛弃了自己的神明，转而去侍奉另一个神明——而那个神明只懂得索取，从不给予祝福。',
+    quoteSrc:'— 加缪《西西弗神话》手稿注',
+    breakthrough:[
+      {title:'问自己一个问题', text:'「如果这件事做完，没有任何人知道，我还会做吗？」如果答案是否，说明你在为被看见而卷，不是为结果而卷。'},
+      {title:'设一个「停止工作»的硬边界', text:'不是为了摸鱼，是为了让大脑真正充电。长期高速运转的引擎会过热，你也一样。每天有一段时间彻底断开。'},
+      {title:'把驱动力从「焦虑»换成「选择»', text:'你有能力，但能力不应该是焦虑的出口。试着问：这件事是我真正想做的，还是我停不下来？这个问题的答案，比任何KPI都重要。'}
+    ]
+  },
+  FISH: {
+    emoji:'🌿', name:'佛系摸鱼王', archetype:'FISH · 局外人原型',
+    tags:['被动防御','靠专业','外化压力','求稳'],
+    sting:'你活得最明白，但你的年终奖最少。',
+    desc:'你把摸鱼研究到了哲学层面。永远刚好在deadline前完成，永远不多做一分钟。你不是不行，是不想。你比任何人都清楚这份工作值多少钱，然后精准地付出那么多。活得最清醒，但没有人知道你清醒的代价是什么。',
+    quads:[
+      {label:'职场行为',val:'精准完成最低要求，其余时间全属于自己',type:''},
+      {label:'生存策略',val:'用"刚好够用"换取最大化的个人自由',type:''},
+      {label:'致命弱点',val:'经济下行期最先被优化，没有任何缓冲',type:'danger'},
+      {label:'隐藏超能力',val:'极强的边界感，不会被工作慢慢侵蚀生活',type:'power'}
+    ],
+    quote:'他对一切都无所谓——这不是冷漠，而是一种经过深思熟虑之后的、带有尊严的撤退。世界并没有因为他的参与而变得更好，他因此决定不再假装热情。',
+    quoteSrc:'— 加缪《局外人》',
+    breakthrough:[
+      {title:'建立一个「不可替代的专项»', text:'摸鱼没问题，但要在某一件事上做到没人能替代你。这是你在下行期的保险。'},
+      {title:'把节省下来的精力用在真正想做的事上', text:'你有别人没有的时间和精力。这是优势，但只有用出去才是优势，攒着只是潜力。'},
+      {title:'想清楚你在等什么', text:'「不想在这里卷」是清醒。但清醒之后呢？你有没有一件事，是你愿意为它真正投入的？找到它，比摸鱼更重要。'}
+    ]
+  },
+  BOMB: {
+    emoji:'🌋', name:'定时炸弹', archetype:'BOMB · 地下室原型',
+    tags:['被动积压','靠专业','外化爆发','向上'],
+    sting:'你不是脾气差，是忍耐值被榨干了。',
+    desc:'平时沉默寡言，但积压到一定程度会突然爆发——一封让全组沉默三秒的邮件，或者直接裸辞不道别。你不是脾气差，是忍耐值被榨干了。每一次爆发之后你都后悔，但下一次还是会积压到同一个临界点，因为你从来没有真正解决过那个根源。',
+    quads:[
+      {label:'职场行为',val:'长期沉默积累，以超预期方式突然爆发',type:''},
+      {label:'生存策略',val:'用沉默换和平，代价是迟早要彻底爆掉',type:''},
+      {label:'致命弱点',val:'爆发时机往往不对，后果难以收拾',type:'danger'},
+      {label:'隐藏超能力',val:'爆发前积累的观察极其深刻，看问题最准',type:'power'}
+    ],
+    quote:'我是一个有病的人……我是一个狠毒的人。我相信我的肝脏有毛病。不过，关于我的病，我其实一点都不了解，也不能确定哪里出了问题。',
+    quoteSrc:'— 陀思妥耶夫斯基《地下室手记》开篇',
+    breakthrough:[
+      {title:'学会「小剂量释放»', text:'不要等到满了再爆。每次有不舒服，当天私下找一个信任的人说出来，或者写下来。压力是可以日常疏导的，不需要等到极限。'},
+      {title:'把愤怒变成提案', text:'你爆发的那些瞬间，背后往往是真实的问题。试着在还没爆之前，把它整理成「我观察到X，我认为Y，我建议Z」，愤怒变成建设性的声音。'},
+      {title:'找到触发点', text:'你已经爆过几次了，每次的导火索是什么？找到规律，就能在下次到来之前，提前做选择——是沟通、是离开，还是接受。'}
+    ]
+  }
+};
+
+function calcPersona(scores) {
+  const A = scores.A||0, B = scores.B||0, C = scores.C||0, D = scores.D||0;
+  if (C>1 && D>0) return 'BURN';
+  if (C>1 && D<=0) return 'BOMB';
+  if (A>2 && B>1) return 'BKST';
+  if (A>1 && B<=0 && D>0) return 'BURN';
+  if (A>1 && B>0 && D>0) return 'ACTR';
+  if (A>0 && B<=0 && D<=0) return 'BULL';
+  if (B>1 && D>0 && A<=0) return 'ACTR';
+  if (B>0 && D<=0 && C<0) return 'INVS';
+  if (D>1 && A<=0 && B<=0) return 'BAIT';
+  if (D<=-1 && C<0 && A<0) return 'FISH';
+  if (C<-1 && A<0 && B<0) return 'BLME';
+  if (A<-1 && B<-1) return 'MALO';
+  if (C>0 && A<0) return 'BOMB';
+  if (B>0 && D<0) return 'INVS';
+  return 'MALO';
+}
+
+let currentQ = 0;
+let scores = {A:0,B:0,C:0,D:0};
+let answers = new Array(15).fill(null);
+let answered = false;
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+}
+
+function startQuiz() {
+  currentQ = 0;
+  scores = {A:0,B:0,C:0,D:0};
+  answers = new Array(15).fill(null);
+  showScreen('quiz');
+  renderQuestion();
+}
+
+function renderQuestion() {
+  const q = QUESTIONS[currentQ];
+  const letters = ['A','B','C','D'];
+  document.getElementById('q-counter').textContent = `${currentQ+1}/15`;
+  document.getElementById('q-number').textContent = `Q${String(currentQ+1).padStart(2,'0')}`;
+  document.getElementById('q-text').textContent = q.text;
+  document.getElementById('progress-fill').style.width = `${(currentQ/15)*100}%`;
+  document.getElementById('btn-back').disabled = currentQ === 0;
+
+  const container = document.getElementById('options');
+  container.innerHTML = '';
+  q.opts.forEach((opt, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'opt-btn' + (answers[currentQ] === i ? ' selected' : '');
+    btn.setAttribute('data-letter', letters[i]);
+    btn.textContent = opt.text;
+    btn.onclick = () => selectAnswer(i);
+    container.appendChild(btn);
+  });
+  answered = answers[currentQ] !== null;
+}
+
+function selectAnswer(idx) {
+  // Remove old answer scores if re-answering
+  if (answers[currentQ] !== null) {
+    const old = QUESTIONS[currentQ].opts[answers[currentQ]].scores;
+    Object.keys(old).forEach(k => { scores[k] = (scores[k]||0) - old[k]; });
+  }
+  answers[currentQ] = idx;
+  answered = true;
+
+  const s = QUESTIONS[currentQ].opts[idx].scores;
+  Object.keys(s).forEach(k => { scores[k] = (scores[k]||0) + s[k]; });
+
+  document.querySelectorAll('.opt-btn').forEach((b,i) => {
+    b.classList.toggle('selected', i === idx);
+  });
+
+  setTimeout(() => {
+    currentQ++;
+    if (currentQ < QUESTIONS.length) {
+      renderQuestion();
+    } else {
+      showScreen('loading');
+      setTimeout(showResult, 1800);
+    }
+  }, 340);
+}
+
+function goBack() {
+  if (currentQ === 0) return;
+  currentQ--;
+  renderQuestion();
+}
+
+function showResult() {
+  const key = calcPersona(scores);
+  const p = PERSONAS[key];
+
+  document.getElementById('result-hero').setAttribute('data-code', key);
+  document.getElementById('result-emoji').textContent = p.emoji;
+  document.getElementById('result-name').textContent = p.name;
+  document.getElementById('result-archetype').textContent = p.archetype;
+  document.getElementById('result-sting').textContent = p.sting;
+  document.getElementById('result-desc').textContent = p.desc;
+  document.getElementById('quote-text').textContent = p.quote;
+  document.getElementById('quote-src').textContent = p.quoteSrc;
+
+  document.getElementById('result-tags').innerHTML = p.tags.map(t=>`<span class="rtag">${t}</span>`).join('');
+
+  document.getElementById('result-quads').innerHTML = p.quads.map(q=>
+    `<div class="quad-item ${q.type}"><div class="quad-ql">${q.label}</div><div class="quad-qv">${q.val}</div></div>`
+  ).join('');
+
+  document.getElementById('breakthrough-items').innerHTML = p.breakthrough.map((b,i)=>
+    `<div class="bt-item">
+      <div class="bt-num">0${i+1}</div>
+      <div class="bt-text"><strong>${b.title}</strong><br>${b.text}</div>
+    </div>`
+  ).join('');
+
+  showScreen('result');
+}
+
+function handleShare() {
+  if (navigator.share) {
+    navigator.share({
+      title: 'WBTI · 你是哪种打工人',
+      text: '测测你是哪种职场原型，结果很准，测完记得@同事！',
+      url: window.location.href
+    }).catch(()=>{});
+  } else {
+    const el = document.createElement('textarea');
+    el.value = window.location.href;
+    document.body.appendChild(el);
+    el.select();
+    document.execCommand('copy');
+    document.body.removeChild(el);
+    alert('链接已复制！发给朋友，让他们也来测测 →');
+  }
+}
+
+// ── SHARE IMAGE GENERATOR ──
+const SITE_URL = 'REPLACE_WITH_YOUR_URL'; // 上线后替换为真实链接
+
+function generateShareImage() {
+  const key = document.getElementById('result-hero').getAttribute('data-code');
+  const p = PERSONAS[key];
+  const dpr = window.devicePixelRatio || 2;
+  const W = 750, H = 1100;
+
+  const canvas = document.createElement('canvas');
+  canvas.width = W * dpr;
+  canvas.height = H * dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+
+  // Background
+  ctx.fillStyle = '#F5F0E8';
+  ctx.fillRect(0, 0, W, H);
+
+  // Top dark band
+  ctx.fillStyle = '#1A1614';
+  ctx.fillRect(0, 0, W, 420);
+
+  // Watermark code text
+  ctx.save();
+  ctx.font = 'bold 160px monospace';
+  ctx.fillStyle = 'rgba(255,255,255,0.05)';
+  ctx.textAlign = 'right';
+  ctx.fillText(key, W - 20, 400);
+  ctx.restore();
+
+  // Badge
+  ctx.font = '22px monospace';
+  ctx.fillStyle = '#E8A030';
+  ctx.textAlign = 'left';
+  ctx.fillText('WBTI · 职场原型测试 · 2026', 48, 60);
+
+  // Emoji
+  ctx.font = '96px serif';
+  ctx.textAlign = 'left';
+  ctx.fillText(p.emoji, 44, 170);
+
+  // Name
+  ctx.font = 'bold 72px serif';
+  ctx.fillStyle = '#FDFAF5';
+  ctx.textAlign = 'left';
+  ctx.fillText(p.name, 48, 260);
+
+  // Archetype
+  ctx.font = '22px monospace';
+  ctx.fillStyle = 'rgba(255,255,255,0.4)';
+  ctx.fillText(p.archetype, 48, 300);
+
+  // Sting quote line
+  ctx.fillStyle = '#C8401A';
+  ctx.fillRect(48, 326, 4, 52);
+  ctx.font = '26px serif';
+  ctx.fillStyle = 'rgba(255,255,255,0.88)';
+  const stingLines = wrapText(ctx, p.sting, W - 120);
+  stingLines.forEach((line, i) => ctx.fillText(line, 62, 355 + i * 34));
+
+  // Tags row
+  const tags = p.tags;
+  let tx = 48;
+  ctx.font = '20px monospace';
+  tags.forEach(tag => {
+    const tw = ctx.measureText(tag).width + 24;
+    ctx.strokeStyle = '#C4B8AC';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(tx, 440, tw, 34);
+    ctx.fillStyle = '#8C7B70';
+    ctx.fillText(tag, tx + 12, 462);
+    tx += tw + 10;
+  });
+
+  // Desc
+  ctx.font = '24px serif';
+  ctx.fillStyle = '#4A3F38';
+  ctx.textAlign = 'left';
+  const descLines = wrapText(ctx, p.desc, W - 96);
+  descLines.slice(0, 5).forEach((line, i) => ctx.fillText(line, 48, 510 + i * 36));
+
+  // Divider
+  ctx.strokeStyle = '#C4B8AC';
+  ctx.lineWidth = 0.5;
+  ctx.beginPath(); ctx.moveTo(48, 700); ctx.lineTo(W - 48, 700); ctx.stroke();
+
+  // Quad grid
+  const quads = p.quads;
+  const qW = (W - 120) / 2, qH = 100;
+  quads.forEach((q, i) => {
+    const col = i % 2, row = Math.floor(i / 2);
+    const qx = 48 + col * (qW + 24), qy = 716 + row * (qH + 12);
+    ctx.fillStyle = '#EDE7D9';
+    ctx.fillRect(qx, qy, qW, qH);
+    const accentColor = q.type === 'danger' ? '#C8401A' : q.type === 'power' ? '#E8A030' : '#C4B8AC';
+    ctx.fillStyle = accentColor;
+    ctx.fillRect(qx, qy, 3, qH);
+    ctx.font = '18px monospace';
+    ctx.fillStyle = '#8C7B70';
+    ctx.fillText(q.label, qx + 14, qy + 26);
+    ctx.font = '20px serif';
+    ctx.fillStyle = '#1A1614';
+    const vLines = wrapText(ctx, q.val, qW - 28);
+    vLines.slice(0,2).forEach((l,li) => ctx.fillText(l, qx + 14, qy + 52 + li * 26));
+  });
+
+  // QR code area
+  const qrY = 940;
+  ctx.fillStyle = '#FDFAF5';
+  ctx.fillRect(48, qrY, 120, 120);
+  ctx.strokeStyle = '#C4B8AC';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(48, qrY, 120, 120);
+
+  // Draw QR or placeholder
+  if (SITE_URL !== 'REPLACE_WITH_YOUR_URL') {
+    drawQRPlaceholder(ctx, 48, qrY, 120, SITE_URL);
+  } else {
+    // Placeholder pattern
+    ctx.fillStyle = '#C4B8AC';
+    ctx.font = '13px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('扫码测试', 108, qrY + 68);
+    ctx.fillText('WBTI', 108, qrY + 88);
+    // Simple grid pattern
+    ctx.fillStyle = '#8C7B70';
+    for(let r=0;r<5;r++) for(let c=0;c<5;c++) {
+      if ((r+c)%2===0) ctx.fillRect(58+c*18, qrY+10+r*18, 14, 14);
+    }
+  }
+
+  ctx.font = '22px serif';
+  ctx.fillStyle = '#4A3F38';
+  ctx.textAlign = 'left';
+  ctx.fillText('扫码测试你是哪种打工人', 188, qrY + 44);
+  ctx.font = '18px monospace';
+  ctx.fillStyle = '#8C7B70';
+  ctx.fillText('WBTI · 职场原型测试', 188, qrY + 72);
+  ctx.fillText('@同事一起测，看看他们是哪种', 188, qrY + 96);
+
+  // Bottom line
+  ctx.fillStyle = '#C8401A';
+  ctx.fillRect(0, H - 6, W, 6);
+
+  const dataUrl = canvas.toDataURL('image/png');
+  document.getElementById('share-img-preview').src = dataUrl;
+  document.getElementById('img-modal').classList.add('active');
+}
+
+function drawQRPlaceholder(ctx, x, y, size, url) {
+  // Simple QR-like visual using URL hash as seed
+  const s = url.split('').reduce((a,c)=>a+c.charCodeAt(0),0);
+  const cell = size / 10;
+  ctx.fillStyle = '#1A1614';
+  for(let r=0;r<10;r++) for(let c=0;c<10;c++) {
+    if ((s*r+c*7+r*c)%3 !== 0) ctx.fillRect(x+c*cell, y+r*cell, cell-1, cell-1);
+  }
+  // Finder squares
+  [[0,0],[0,7],[7,0]].forEach(([fr,fc])=>{
+    ctx.fillStyle='#1A1614';
+    ctx.fillRect(x+fc*cell,y+fr*cell,3*cell,3*cell);
+    ctx.fillStyle='#F5F0E8';
+    ctx.fillRect(x+fc*cell+cell*0.3,y+fr*cell+cell*0.3,cell*2.4,cell*2.4);
+    ctx.fillStyle='#1A1614';
+    ctx.fillRect(x+fc*cell+cell*0.8,y+fr*cell+cell*0.8,cell*1.4,cell*1.4);
+  });
+}
+
+function wrapText(ctx, text, maxWidth) {
+  const chars = text.split('');
+  const lines = [];
+  let line = '';
+  for (const ch of chars) {
+    const test = line + ch;
+    if (ctx.measureText(test).width > maxWidth && line) {
+      lines.push(line);
+      line = ch;
+    } else {
+      line = test;
+    }
+  }
+  if (line) lines.push(line);
+  return lines;
+}
+
+function closeImgModal() {
+  document.getElementById('img-modal').classList.remove('active');
+}
+
+function retryQuiz() { startQuiz(); }
+</script>
+</body>
+</html>
