@@ -761,14 +761,24 @@ function handleShare() {
 }
 
 // ── SHARE IMAGE GENERATOR ──
-const SITE_URL = 'REPLACE_WITH_YOUR_URL'; // 上线后替换为真实链接
+const SITE_URL = 'https://wbti-blush.vercel.app';
 
 function generateShareImage() {
   const key = document.getElementById('result-hero').getAttribute('data-code');
   const p = PERSONAS[key];
-  const dpr = window.devicePixelRatio || 2;
+  const dpr = Math.min(window.devicePixelRatio || 2, 3);
   const W = 750, H = 1100;
 
+  // Load QR code image first, then draw canvas
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(SITE_URL)}&bgcolor=FDFAF5&color=1A1614&margin=4`;
+  const qrImg = new Image();
+  qrImg.crossOrigin = 'anonymous';
+  qrImg.onload = () => renderCanvas(p, key, W, H, dpr, qrImg);
+  qrImg.onerror = () => renderCanvas(p, key, W, H, dpr, null);
+  qrImg.src = qrUrl;
+}
+
+function renderCanvas(p, key, W, H, dpr, qrImg) {
   const canvas = document.createElement('canvas');
   canvas.width = W * dpr;
   canvas.height = H * dpr;
@@ -783,7 +793,7 @@ function generateShareImage() {
   ctx.fillStyle = '#1A1614';
   ctx.fillRect(0, 0, W, 420);
 
-  // Watermark code text
+  // Watermark
   ctx.save();
   ctx.font = 'bold 160px monospace';
   ctx.fillStyle = 'rgba(255,255,255,0.05)';
@@ -799,13 +809,11 @@ function generateShareImage() {
 
   // Emoji
   ctx.font = '96px serif';
-  ctx.textAlign = 'left';
   ctx.fillText(p.emoji, 44, 170);
 
   // Name
   ctx.font = 'bold 72px serif';
   ctx.fillStyle = '#FDFAF5';
-  ctx.textAlign = 'left';
   ctx.fillText(p.name, 48, 260);
 
   // Archetype
@@ -813,7 +821,7 @@ function generateShareImage() {
   ctx.fillStyle = 'rgba(255,255,255,0.4)';
   ctx.fillText(p.archetype, 48, 300);
 
-  // Sting quote line
+  // Sting
   ctx.fillStyle = '#C8401A';
   ctx.fillRect(48, 326, 4, 52);
   ctx.font = '26px serif';
@@ -821,14 +829,12 @@ function generateShareImage() {
   const stingLines = wrapText(ctx, p.sting, W - 120);
   stingLines.forEach((line, i) => ctx.fillText(line, 62, 355 + i * 34));
 
-  // Tags row
-  const tags = p.tags;
+  // Tags
   let tx = 48;
   ctx.font = '20px monospace';
-  tags.forEach(tag => {
+  p.tags.forEach(tag => {
     const tw = ctx.measureText(tag).width + 24;
-    ctx.strokeStyle = '#C4B8AC';
-    ctx.lineWidth = 1;
+    ctx.strokeStyle = '#C4B8AC'; ctx.lineWidth = 1;
     ctx.strokeRect(tx, 440, tw, 34);
     ctx.fillStyle = '#8C7B70';
     ctx.fillText(tag, tx + 12, 462);
@@ -838,70 +844,49 @@ function generateShareImage() {
   // Desc
   ctx.font = '24px serif';
   ctx.fillStyle = '#4A3F38';
-  ctx.textAlign = 'left';
   const descLines = wrapText(ctx, p.desc, W - 96);
   descLines.slice(0, 5).forEach((line, i) => ctx.fillText(line, 48, 510 + i * 36));
 
   // Divider
-  ctx.strokeStyle = '#C4B8AC';
-  ctx.lineWidth = 0.5;
+  ctx.strokeStyle = '#C4B8AC'; ctx.lineWidth = 0.5;
   ctx.beginPath(); ctx.moveTo(48, 700); ctx.lineTo(W - 48, 700); ctx.stroke();
 
-  // Quad grid
-  const quads = p.quads;
+  // Quads
   const qW = (W - 120) / 2, qH = 100;
-  quads.forEach((q, i) => {
+  p.quads.forEach((q, i) => {
     const col = i % 2, row = Math.floor(i / 2);
     const qx = 48 + col * (qW + 24), qy = 716 + row * (qH + 12);
     ctx.fillStyle = '#EDE7D9';
     ctx.fillRect(qx, qy, qW, qH);
-    const accentColor = q.type === 'danger' ? '#C8401A' : q.type === 'power' ? '#E8A030' : '#C4B8AC';
-    ctx.fillStyle = accentColor;
+    ctx.fillStyle = q.type === 'danger' ? '#C8401A' : q.type === 'power' ? '#E8A030' : '#C4B8AC';
     ctx.fillRect(qx, qy, 3, qH);
-    ctx.font = '18px monospace';
-    ctx.fillStyle = '#8C7B70';
+    ctx.font = '18px monospace'; ctx.fillStyle = '#8C7B70';
     ctx.fillText(q.label, qx + 14, qy + 26);
-    ctx.font = '20px serif';
-    ctx.fillStyle = '#1A1614';
-    const vLines = wrapText(ctx, q.val, qW - 28);
-    vLines.slice(0,2).forEach((l,li) => ctx.fillText(l, qx + 14, qy + 52 + li * 26));
+    ctx.font = '20px serif'; ctx.fillStyle = '#1A1614';
+    wrapText(ctx, q.val, qW - 28).slice(0, 2).forEach((l, li) => ctx.fillText(l, qx + 14, qy + 52 + li * 26));
   });
 
-  // QR code area
-  const qrY = 940;
+  // QR area
+  const qrY = 942, qrSize = 120;
   ctx.fillStyle = '#FDFAF5';
-  ctx.fillRect(48, qrY, 120, 120);
-  ctx.strokeStyle = '#C4B8AC';
-  ctx.lineWidth = 1;
-  ctx.strokeRect(48, qrY, 120, 120);
-
-  // Draw QR or placeholder
-  if (SITE_URL !== 'REPLACE_WITH_YOUR_URL') {
-    drawQRPlaceholder(ctx, 48, qrY, 120, SITE_URL);
+  ctx.fillRect(48, qrY, qrSize, qrSize);
+  if (qrImg) {
+    ctx.drawImage(qrImg, 48, qrY, qrSize, qrSize);
   } else {
-    // Placeholder pattern
-    ctx.fillStyle = '#C4B8AC';
-    ctx.font = '13px monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText('扫码测试', 108, qrY + 68);
-    ctx.fillText('WBTI', 108, qrY + 88);
-    // Simple grid pattern
-    ctx.fillStyle = '#8C7B70';
-    for(let r=0;r<5;r++) for(let c=0;c<5;c++) {
-      if ((r+c)%2===0) ctx.fillRect(58+c*18, qrY+10+r*18, 14, 14);
-    }
+    ctx.fillStyle = '#C4B8AC'; ctx.font = '14px monospace'; ctx.textAlign = 'center';
+    ctx.fillText('扫码测试', 108, qrY + 65);
   }
+  ctx.strokeStyle = '#C4B8AC'; ctx.lineWidth = 1;
+  ctx.strokeRect(48, qrY, qrSize, qrSize);
 
-  ctx.font = '22px serif';
-  ctx.fillStyle = '#4A3F38';
-  ctx.textAlign = 'left';
-  ctx.fillText('扫码测试你是哪种打工人', 188, qrY + 44);
-  ctx.font = '18px monospace';
-  ctx.fillStyle = '#8C7B70';
-  ctx.fillText('WBTI · 职场原型测试', 188, qrY + 72);
+  ctx.font = '24px serif'; ctx.fillStyle = '#1A1614'; ctx.textAlign = 'left';
+  ctx.fillText('扫码测试你是哪种打工人', 188, qrY + 40);
+  ctx.font = '19px monospace'; ctx.fillStyle = '#8C7B70';
+  ctx.fillText('WBTI · 职场原型测试', 188, qrY + 68);
+  ctx.font = '20px serif'; ctx.fillStyle = '#4A3F38';
   ctx.fillText('@同事一起测，看看他们是哪种', 188, qrY + 96);
 
-  // Bottom line
+  // Bottom accent
   ctx.fillStyle = '#C8401A';
   ctx.fillRect(0, H - 6, W, 6);
 
